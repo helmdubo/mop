@@ -40,6 +40,11 @@
 3. **Authentication → URL Configuration** — заполним после первого деплоя Vercel
    (адрес приложения).
 
+## Шаг 4.5. Открыть схемы API (в обоих проектах!)
+
+**Settings → API → Exposed schemas**: добавить к `public` схемы **`app`** и **`kaiten`**.
+Без этого приложение получит 406 на каждый запрос (грабли v1).
+
 ## Шаг 5. Access Token для CI
 
 1. Аватар (правый верхний угол) → **Account Settings → Access Tokens**.
