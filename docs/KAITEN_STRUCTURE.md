@@ -113,5 +113,6 @@ MP asset 'is_hotel_roulette/_blackjack_table' (type_id 438149, board Midpoly)
    без родителя типа `Task`/`MP asset` — сами себе ассет.
 4. Attendance (Фаза 4): источник — space 530000, типы карточек Отпуск/Отгул/sick
    day/Overtime/Day Off (+ кастомные поля «Порядок/Начало отпуска»).
-5. Уточнить у владельца: как биллятся HP/LP/Atlas/Bake (highpoly) — отдельные
-   колонки акта или сворачиваются в существующие?
+5. ~~Как биллятся HP/LP/Atlas/Bake~~ — ✅ решено (D35): это полноценные колонки акта,
+   наравне со стадиями midpoly. Сиды и маппинги: миграция
+   `20260710130000_task_types_full_pipeline.sql`.
