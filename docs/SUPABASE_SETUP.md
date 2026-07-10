@@ -74,7 +74,22 @@
 | `KAITEN_API_TOKEN` | токен Kaiten | Production + Preview |
 | `CRON_SECRET` | сгенерировать: `openssl rand -hex 32` | Production |
 
-## Шаг 7. Сообщить агенту
+## Шаг 7. Первый пользователь (owner)
+
+Выполняется в **обоих** проектах после применения миграций:
+
+1. **Authentication → Users → Add user → Create new user**: ваш email + пароль
+   (галочку Auto Confirm — включить).
+2. **SQL Editor** → выполнить:
+
+```sql
+insert into app.app_users (auth_user_id, email, role)
+select id, email, 'owner' from auth.users
+where email = 'ВАШ_EMAIL'
+on conflict (auth_user_id) do nothing;
+```
+
+## Шаг 8. Сообщить агенту
 
 Пришлите в чат (это НЕ секреты):
 - Project URL / Ref обоих проектов;

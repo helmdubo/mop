@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch: {}
 
 jobs:
   build:
@@ -44,8 +45,8 @@ jobs:
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD_STAGING }}
 
   migrate-prod:
-    # Только после merge в main
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # После merge в main или ручного запуска (Actions -> CI -> Run workflow)
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     concurrency: migrate-prod
