@@ -33,6 +33,15 @@ export default async function AppShell({
           <Link href="/" className="block rounded-md px-3 py-2 hover:bg-neutral-100">
             Кокпит
           </Link>
+          <Link href="/projects" className="block rounded-md px-3 py-2 hover:bg-neutral-100">
+            Проекты
+          </Link>
+          <Link href="/clients" className="block rounded-md px-3 py-2 hover:bg-neutral-100">
+            Клиенты
+          </Link>
+          <Link href="/employees" className="block rounded-md px-3 py-2 hover:bg-neutral-100">
+            Сотрудники
+          </Link>
           <Link href="/billing" className="block rounded-md px-3 py-2 hover:bg-neutral-100">
             Биллинг
           </Link>
