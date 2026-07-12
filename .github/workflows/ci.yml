@@ -24,8 +24,8 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
 
   migrate-staging:
-    # PR: миграции применяются к staging-проекту
-    if: github.event_name == 'pull_request'
+    # PR и main: staging всегда в паритете с prod
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     concurrency: migrate-staging
