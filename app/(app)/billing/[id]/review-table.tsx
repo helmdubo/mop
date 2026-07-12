@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition, useState } from "react";
-import type { ReviewAssetRow } from "@/lib/billing/data";
+import type { ReviewRow } from "@/lib/billing/data";
 import { returnToPool } from "@/lib/billing/actions";
 
 export function ReviewTable({
@@ -12,7 +12,7 @@ export function ReviewTable({
   canEdit,
 }: {
   periodId: string;
-  rows: ReviewAssetRow[];
+  rows: ReviewRow[];
   columns: { code: string; label: string }[];
   adminPercent: number;
   canEdit: boolean;
@@ -28,14 +28,11 @@ export function ReviewTable({
   }
   const adminHours = Math.round(grandTotal * adminPercent) / 100;
 
-  const doReturn = (assetCardId: number) =>
+  const doReturn = (cardIds: number[]) =>
     startTransition(async () => {
       setError(null);
-      try {
-        await returnToPool(periodId, [assetCardId]);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
-      }
+      const res = await returnToPool(periodId, cardIds);
+      if (!res.ok) setError(res.error);
     });
 
   const num = (v: number | undefined) =>
@@ -48,7 +45,7 @@ export function ReviewTable({
         <table className="w-full text-sm">
           <thead className="border-b border-neutral-200 bg-neutral-50 text-left text-xs uppercase text-neutral-500">
             <tr>
-              <th className="px-3 py-2">Ассет</th>
+              <th className="px-3 py-2">Строка (ассет / этап)</th>
               <th className="px-3 py-2">Проект</th>
               <th className="px-3 py-2 text-right">Итого</th>
               {columns.map((c) => (
@@ -61,8 +58,15 @@ export function ReviewTable({
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.assetCardId} className="border-b border-neutral-100 hover:bg-neutral-50">
-                <td className="px-3 py-2 font-medium">{r.title}</td>
+              <tr key={r.key} className="border-b border-neutral-100 hover:bg-neutral-50">
+                <td className="px-3 py-2">
+                  <div className="font-medium">{r.title}</div>
+                  {r.subtitle && (
+                    <div className="text-xs text-neutral-400">
+                      этап ассета: {r.subtitle}
+                    </div>
+                  )}
+                </td>
                 <td className="px-3 py-2">{r.projectName ?? "—"}</td>
                 <td className="px-3 py-2 text-right font-semibold">{r.total.toFixed(2)}</td>
                 {columns.map((c) => (
@@ -73,7 +77,7 @@ export function ReviewTable({
                 {canEdit && (
                   <td className="px-3 py-2 text-right">
                     <button
-                      onClick={() => doReturn(r.assetCardId)}
+                      onClick={() => doReturn(r.cardIds)}
                       disabled={pending}
                       className="rounded-md border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-100 disabled:opacity-50"
                     >
@@ -89,7 +93,7 @@ export function ReviewTable({
                   colSpan={3 + columns.length + (canEdit ? 1 : 0)}
                   className="px-4 py-6 text-center text-neutral-400"
                 >
-                  В review пока пусто — выберите ассеты из пула выше
+                  В review пока пусто — выберите строки из пула выше
                 </td>
               </tr>
             )}

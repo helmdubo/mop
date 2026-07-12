@@ -12,6 +12,7 @@ import { PoolTable } from "./pool-table";
 import { ReviewTable } from "./review-table";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export default async function BillingPeriodPage(props: {
   params: Promise<{ id: string }>;
@@ -33,15 +34,15 @@ export default async function BillingPeriodPage(props: {
     ["owner", "pm"].includes(appUser.role) &&
     ["draft", "internal_review"].includes(period.status);
 
-  const mappings = await loadMappings(supabase);
-  const [poolRows, review] = await Promise.all([
+  const [mappings, poolRows] = await Promise.all([
+    loadMappings(supabase),
     canEdit ? loadPoolRows(supabase, period.client_id) : Promise.resolve([]),
-    loadReview(supabase, id),
   ]);
-  const pool = assemblePool(poolRows, mappings);
-  // ассеты, уже отправленные в review, из пула убираем
-  const inReview = new Set(review.rows.map((r) => r.assetCardId));
-  const poolVisible = pool.filter((a) => !inReview.has(a.assetCardId));
+  // пул уже исключает забилленные карточки; ассет остаётся, пока есть
+  // незабилленные этапы — по этому же признаку review решает, сворачивать ли строку
+  const poolVisible = assemblePool(poolRows, mappings);
+  const assetsStillInPool = new Set(poolVisible.map((a) => a.assetCardId));
+  const review = await loadReview(supabase, id, assetsStillInPool);
 
   const columns = mappings.taskTypeLabels.filter((t) => review.usedTypes.has(t.code));
   const clientName = (period.clients as unknown as { name: string } | null)?.name;

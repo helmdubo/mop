@@ -27,7 +27,7 @@ export interface Mappings {
   employeeByKaitenUser: Map<number, string>;
 }
 
-interface PoolRow {
+export interface PoolRow {
   asset_card_id: number;
   card_id: number;
   title: string;
@@ -37,7 +37,7 @@ interface PoolRow {
   archived: boolean;
   completed_at: string | null;
   user_id: number | null;
-  hours: number | null;
+  hours: number | string | null;
 }
 
 export async function loadMappings(db: SupabaseClient): Promise<Mappings> {
@@ -130,37 +130,46 @@ export function assemblePool(rows: PoolRow[], m: Mappings): PoolAsset[] {
   }
 
   for (const stage of stageMap.values()) {
+    if (stage.hours === 0) continue; // без часов биллить нечего
     const asset = assets.get(stage.assetId);
     if (!asset) continue;
-    if (stage.isAssetOwnLogs && stage.hours === 0) continue; // пустые собственные логи не показываем
     asset.stages.push(stage);
     asset.totalHours = Math.round((asset.totalHours + stage.hours) * 100) / 100;
   }
 
   return Array.from(assets.values())
-    .filter((a) => a.stages.length > 0 || a.totalHours > 0)
+    .filter((a) => a.stages.length > 0)
     .sort((a, b) => a.title.localeCompare(b.title));
 }
 
-export interface ReviewAssetRow {
+export interface ReviewRow {
+  key: string;
   assetCardId: number;
   title: string;
+  subtitle: string | null; // название ассета для строк-этапов
+  collapsed: boolean;      // ассет свёрнут в одну строку (все этапы забиллены)
   projectName: string | null;
   total: number;
   byType: Record<string, number>;
-  specification: string | null;
+  cardIds: number[];
   clientApproved: boolean;
+  specification: string | null;
 }
+
+const r2 = (n: number) => Math.round(n * 100) / 100;
 
 export async function loadReview(
   db: SupabaseClient,
-  periodId: string
-): Promise<{ rows: ReviewAssetRow[]; usedTypes: Set<string> }> {
+  periodId: string,
+  assetsStillInPool: Set<number>
+): Promise<{ rows: ReviewRow[]; usedTypes: Set<string> }> {
   const [items, statuses] = await Promise.all([
     db
       .schema("app")
       .from("billing_items")
-      .select("asset_card_id, asset_title, task_type, hours_internal, project_id, projects(name)")
+      .select(
+        "asset_card_id, asset_title, kaiten_card_id, stage_title, task_type, hours_internal, project_id, projects(name)"
+      )
       .eq("billing_period_id", periodId),
     db
       .schema("app")
@@ -169,36 +178,88 @@ export async function loadReview(
       .eq("billing_period_id", periodId),
   ]);
 
-  const statusByAsset = new Map(
-    (statuses.data ?? []).map((s) => [s.asset_card_id, s])
-  );
-  const rows = new Map<number, ReviewAssetRow>();
+  const statusByAsset = new Map((statuses.data ?? []).map((s) => [s.asset_card_id, s]));
   const usedTypes = new Set<string>();
 
-  for (const it of items.data ?? []) {
-    let row = rows.get(it.asset_card_id);
-    if (!row) {
-      const st = statusByAsset.get(it.asset_card_id);
-      row = {
-        assetCardId: it.asset_card_id,
-        title: it.asset_title,
-        projectName: (it.projects as unknown as { name: string } | null)?.name ?? null,
-        total: 0,
-        byType: {},
-        specification: st?.specification ?? null,
-        clientApproved: st?.client_approved ?? false,
-      };
-      rows.set(it.asset_card_id, row);
-    }
+  interface Item {
+    asset_card_id: number;
+    asset_title: string;
+    kaiten_card_id: number;
+    stage_title: string | null;
+    task_type: string | null;
+    hours_internal: number | string;
+    projects: unknown;
+  }
+  const byAsset = new Map<number, Item[]>();
+  for (const it of (items.data ?? []) as Item[]) {
+    if (!byAsset.has(it.asset_card_id)) byAsset.set(it.asset_card_id, []);
+    byAsset.get(it.asset_card_id)!.push(it);
     const h = Number(it.hours_internal ?? 0);
-    const tt = it.task_type ?? "misc";
-    row.byType[tt] = Math.round(((row.byType[tt] ?? 0) + h) * 100) / 100;
-    row.total = Math.round((row.total + h) * 100) / 100;
-    if (h > 0) usedTypes.add(tt);
+    if (h > 0) usedTypes.add(it.task_type ?? "misc");
   }
 
-  return {
-    rows: Array.from(rows.values()).sort((a, b) => a.title.localeCompare(b.title)),
-    usedTypes,
-  };
+  const rows: ReviewRow[] = [];
+  for (const [assetId, list] of byAsset) {
+    const st = statusByAsset.get(assetId);
+    const projectName =
+      (list[0].projects as { name: string } | null)?.name ?? null;
+    const collapsed = !assetsStillInPool.has(assetId);
+
+    if (collapsed) {
+      const byType: Record<string, number> = {};
+      let total = 0;
+      for (const it of list) {
+        const h = Number(it.hours_internal ?? 0);
+        const tt = it.task_type ?? "misc";
+        byType[tt] = r2((byType[tt] ?? 0) + h);
+        total = r2(total + h);
+      }
+      rows.push({
+        key: `a-${assetId}`,
+        assetCardId: assetId,
+        title: list[0].asset_title,
+        subtitle: null,
+        collapsed: true,
+        projectName,
+        total,
+        byType,
+        cardIds: Array.from(new Set(list.map((i) => i.kaiten_card_id))),
+        clientApproved: st?.client_approved ?? false,
+        specification: st?.specification ?? null,
+      });
+    } else {
+      // ассет ещё не полностью в review — этапы отдельными строками
+      const byCard = new Map<number, Item[]>();
+      for (const it of list) {
+        if (!byCard.has(it.kaiten_card_id)) byCard.set(it.kaiten_card_id, []);
+        byCard.get(it.kaiten_card_id)!.push(it);
+      }
+      for (const [cardId, cardItems] of byCard) {
+        const byType: Record<string, number> = {};
+        let total = 0;
+        for (const it of cardItems) {
+          const h = Number(it.hours_internal ?? 0);
+          const tt = it.task_type ?? "misc";
+          byType[tt] = r2((byType[tt] ?? 0) + h);
+          total = r2(total + h);
+        }
+        rows.push({
+          key: `c-${cardId}`,
+          assetCardId: assetId,
+          title: cardItems[0].stage_title ?? "(логи на самом ассете)",
+          subtitle: cardItems[0].asset_title,
+          collapsed: false,
+          projectName,
+          total,
+          byType,
+          cardIds: [cardId],
+          clientApproved: st?.client_approved ?? false,
+          specification: st?.specification ?? null,
+        });
+      }
+    }
+  }
+
+  rows.sort((a, b) => (a.subtitle ?? a.title).localeCompare(b.subtitle ?? b.title));
+  return { rows, usedTypes };
 }

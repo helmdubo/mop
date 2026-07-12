@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createPeriod } from "@/lib/billing/actions";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "черновик",
