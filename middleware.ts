@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 type CookieToSet = { name: string; value: string; options?: CookieOptions };
 
-const PUBLIC_PATHS = ["/login"];
+const PUBLIC_PATHS = ["/login", "/account/update-password"];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -42,7 +42,8 @@ export async function middleware(request: NextRequest) {
     url.pathname = "/login";
     return NextResponse.redirect(url);
   }
-  if (user && isPublic) {
+  // Залогиненному пользователю /login не нужен; update-password доступен всем
+  if (user && path.startsWith("/login")) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);

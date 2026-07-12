@@ -1,4 +1,5 @@
 import { signIn } from "./actions";
+import { RecoveryRedirect } from "./recovery-redirect";
 
 export default async function LoginPage(props: {
   searchParams: Promise<{ error?: string }>;
@@ -7,6 +8,7 @@ export default async function LoginPage(props: {
 
   return (
     <main className="flex min-h-screen items-center justify-center">
+      <RecoveryRedirect />
       <form
         action={signIn}
         className="w-full max-w-sm space-y-4 rounded-xl border border-neutral-200 bg-white p-8 shadow-sm"
