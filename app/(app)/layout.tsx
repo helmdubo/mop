@@ -31,7 +31,7 @@ export default async function AppShell({
         <div className="px-4 py-4 text-lg font-semibold tracking-tight">MOP</div>
         <nav className="flex-1 space-y-1 px-2 text-sm">
           <Link href="/" className="block rounded-md px-3 py-2 hover:bg-neutral-100">
-            Кокпит
+            Дэшборд
           </Link>
           <Link href="/projects" className="block rounded-md px-3 py-2 hover:bg-neutral-100">
             Проекты

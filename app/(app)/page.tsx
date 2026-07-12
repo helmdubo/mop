@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function CockpitPage() {
   return (
     <main className="mx-auto max-w-5xl p-8">
-      <h1 className="mb-6 text-2xl font-semibold">Кокпит</h1>
+      <h1 className="mb-6 text-2xl font-semibold">Дэшборд</h1>
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link
           href="/billing"

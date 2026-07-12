@@ -55,10 +55,19 @@ export default async function BillingPage() {
             </select>
           </label>
           <label className="text-sm">
-            <span className="mb-1 block text-neutral-500">Период (месяц)</span>
+            <span className="mb-1 block text-neutral-500">Период с</span>
             <input
-              type="month"
-              name="month"
+              type="date"
+              name="period_start"
+              required
+              className="rounded-md border border-neutral-300 px-3 py-2 text-sm"
+            />
+          </label>
+          <label className="text-sm">
+            <span className="mb-1 block text-neutral-500">по</span>
+            <input
+              type="date"
+              name="period_end"
               required
               className="rounded-md border border-neutral-300 px-3 py-2 text-sm"
             />

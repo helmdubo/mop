@@ -20,12 +20,13 @@ export async function createPeriod(formData: FormData) {
   const supabase = await createClient();
 
   const clientId = String(formData.get("client_id") ?? "");
-  const month = String(formData.get("month") ?? ""); // YYYY-MM
-  if (!clientId || !/^\d{4}-\d{2}$/.test(month)) throw new Error("Некорректные данные");
-
-  const [y, m] = month.split("-").map(Number);
-  const start = `${month}-01`;
-  const end = `${month}-${String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, "0")}`;
+  const start = String(formData.get("period_start") ?? "");
+  const end = String(formData.get("period_end") ?? "");
+  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  if (!clientId || !DATE_RE.test(start) || !DATE_RE.test(end)) {
+    throw new Error("Некорректные данные");
+  }
+  if (start > end) throw new Error("Дата начала позже даты конца");
 
   const { data: client } = await supabase
     .schema("app")

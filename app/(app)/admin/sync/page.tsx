@@ -32,7 +32,7 @@ export default async function SyncAdminPage() {
           </p>
         </div>
         <Link href="/" className="text-sm text-neutral-500 hover:underline">
-          ← Кокпит
+          ← Дэшборд
         </Link>
       </header>
 
