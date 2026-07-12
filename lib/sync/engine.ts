@@ -106,7 +106,7 @@ function transformCard(c: KaitenEntity): Record<string, unknown> {
     member_ids: members.map((m) => m.id),
     state: c.state != null ? String(c.state) : null,
     archived: Boolean(c.archived),
-    estimate_minutes: (c.estimate_workload as number | null) ?? null,
+    estimate_workload: (c.estimate_workload as number | null) ?? null,
     completed_at: iso(c.completed_at),
     kaiten_created_at: iso(c.created),
     kaiten_updated_at: iso(c.updated),
